@@ -103,11 +103,12 @@ function flags2str(flags) {
 
 Java.perform(() => {
     const IntentResolver = Java.use("com.android.server.IntentResolver");
-    const queryIntent = IntentResolver.queryIntent;
+    const queryIntent = IntentResolver.queryIntent.overload('com.android.server.pm.snapshot.PackageDataSnapshot', 'android.content.Intent', 'java.lang.String', 'boolean', 'int', 'long');
 
-    queryIntent.implementation = function(intent, resolvedType, defaultOnly, userId) {
+    queryIntent.implementation = function(snapshot, intent, resolvedType, defaultOnly, userId, flags) {
 	// https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/services/core/java/com/android/server/IntentResolver.java;l=448
-	// "<instance: android.content.Intent>", null, false, 0
+	// android 12: "<instance: android.content.Intent>", null, false, 0
+	// android 13: "<instance: com.android.server.pm.snapshot.PackageDataSnapshot, $className: com.android.server.pm.ComputerEngine>", "<instance: android.content.Intent>", null, false, 0
 	// -
 	// public List<R> queryIntent(@NonNull PackageDataSnapshot snapshot, Intent intent,
 	//         String resolvedType, boolean defaultOnly, @UserIdInt int userId) {
@@ -115,7 +116,7 @@ Java.perform(() => {
 	// }
 
 	send(parse_intent(intent))
-	return queryIntent.call(this, intent, resolvedType, defaultOnly, userId);
+	return queryIntent.call(this, snapshot, intent, resolvedType, defaultOnly, userId, flags);
     }
 
 })
