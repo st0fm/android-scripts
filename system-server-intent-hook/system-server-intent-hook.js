@@ -103,20 +103,29 @@ function flags2str(flags) {
 
 Java.perform(() => {
     const IntentResolver = Java.use("com.android.server.IntentResolver");
-    const queryIntent = IntentResolver.queryIntent.overload('com.android.server.pm.snapshot.PackageDataSnapshot', 'android.content.Intent', 'java.lang.String', 'boolean', 'int', 'long');
+    var sdkVersion = Java.use("android.os.Build$VERSION").SDK_INT.value
 
-    queryIntent.implementation = function(snapshot, intent, resolvedType, defaultOnly, userId, flags) {
-	// https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/services/core/java/com/android/server/IntentResolver.java;l=448
-	// android 12: "<instance: android.content.Intent>", null, false, 0
-	// android 13: "<instance: com.android.server.pm.snapshot.PackageDataSnapshot, $className: com.android.server.pm.ComputerEngine>", "<instance: android.content.Intent>", null, false, 0
-	// -
-	// public List<R> queryIntent(@NonNull PackageDataSnapshot snapshot, Intent intent,
-	//         String resolvedType, boolean defaultOnly, @UserIdInt int userId) {
-	//     return queryIntent(snapshot, intent, resolvedType, defaultOnly, userId, 0);
-	// }
+    if(sdkVersion >= 33) {
+	// in sdk 33 queryIntent has a additional snapshot and flag parameter
 
-	send(parse_intent(intent))
-	return queryIntent.call(this, snapshot, intent, resolvedType, defaultOnly, userId, flags);
+	const queryIntent = IntentResolver.queryIntent.overload('com.android.server.pm.snapshot.PackageDataSnapshot', 'android.content.Intent', 'java.lang.String', 'boolean', 'int', 'long');
+
+	queryIntent.implementation = function(snapshot, intent, resolvedType, defaultOnly, userId, flags) {
+	    // https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/services/core/java/com/android/server/IntentResolver.java;l=448
+	    // android 13: "<instance: com.android.server.pm.snapshot.PackageDataSnapshot, $className: com.android.server.pm.ComputerEngine>", "<instance: android.content.Intent>", null, false, 0
+	
+	    send(parse_intent(intent))
+	    return queryIntent.call(this, snapshot, intent, resolvedType, defaultOnly, userId, flags);
+	}
+    } else {
+	// tested with sdk 31, 30, 29 and 28 
+	const queryIntent = IntentResolver.queryIntent.overload('android.content.Intent', 'java.lang.String', 'boolean', 'int');
+
+	queryIntent.implementation = function(intent, resolvedType, defaultOnly, userId) {
+	    send(parse_intent(intent));
+	    return queryIntent.call(this, intent, resolvedType, defaultOnly, userId);
+	}
     }
+
 
 })
