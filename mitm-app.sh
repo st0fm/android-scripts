@@ -5,7 +5,8 @@
 app_pattern="$1"
 mitm_proxy_port="$2"
 
-app_uid=$(adb shell "ps -A -o UID,NAME" | grep "$app_pattern" | cut -d' ' -f1)
+#app_uid=$(adb shell "ps -A -o UID,NAME" | grep "$app_pattern" | cut -d' ' -f1)
+app_uid=$(adb shell "pm list packages -U | grep $app_pattern | cut -d':' -f3")
 [ -z $app_uid ] && echo "[!] no app found with pattern = $app_pattern" && exit 1
 
 echo "Found app UID = $app_uid for $app_pattern"
